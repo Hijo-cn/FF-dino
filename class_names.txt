@@ -1,0 +1,51 @@
+Condylura cristata
+Desmana moschata
+Dymecodon pilirostris
+Euroscaptor Euroscaptor sp1
+Euroscaptor grandis
+Euroscaptor klossi
+Euroscaptor kuznetsovi
+Euroscaptor longirostris
+Euroscaptor malayana
+Euroscaptor micrura
+Euroscaptor orlovi
+Euroscaptor parvidens
+Galemys pyrenaicus
+Mogera etigo
+Mogera hainana
+Mogera imaizumii
+Mogera insularis
+Mogera kanoana
+Mogera latouchei
+Mogera robusta
+Mogera tokudae
+Mogera wogura
+Neurotrichus gibbsii
+Oreoscaptor mizura
+Parascalops breweri
+Parascaptor Parascaptor sp1
+Parascaptor Parascaptor sp2
+Parascaptor leucura
+Scalopus aquaticus
+Scapanulus oweni
+Scapanus latimanus
+Scapanus occultus
+Scapanus orarius
+Scapanus townsendii
+Scaptochirus moschatus
+Scaptonyx Scaptonyx sp1
+Scaptonyx Scaptonyx sp3
+Scaptonyx fusicaudus
+Talpa altaica
+Talpa aquitania
+Talpa caeca
+Talpa europaea
+Talpa levantis
+Talpa romana
+Talpa talyschensis
+Uropsilus andersoni
+Uropsilus gracilis
+Uropsilus investigator
+Uropsilus nivatus
+Uropsilus soricipes
+Urotrichus talpoides

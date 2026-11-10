@@ -1,0 +1,19 @@
+# 权重不进 git(太大)
+weights/*.pth
+weights/*.pt
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 输出与临时文件
+results*.csv
+results*_emb.npz
+test_list.csv
+*.log
+
+# 系统
+.DS_Store
+Thumbs.db

@@ -1,0 +1,7 @@
+image_path,specimen,view
+/path/to/photos/A001_ventral.JPG,A001,ventral
+/path/to/photos/A001_dorsal.JPG,A001,dorsal
+/path/to/photos/A001_lateral.JPG,A001,lateral
+/path/to/photos/A001_mandible.JPG,A001,mand
+/path/to/photos/A002_ventral.JPG,A002,ventral
+/path/to/photos/A002_lateral.JPG,A002,lateral
