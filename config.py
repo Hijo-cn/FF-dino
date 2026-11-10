@@ -22,7 +22,6 @@ STD = (0.229, 0.224, 0.225)
 
 TAG_SPECIES = "v2_dual7"      # 种模型权重前缀
 TAG_GENUS = "v2_gen2"         # 属模型权重前缀
-FOLDS = [0]                   # 用哪几折的模型(部署用 [0])
 
 # 使用的视角(顺序无所谓)
 VIEWS = ["ventral", "dorsal", "lateral", "mand"]

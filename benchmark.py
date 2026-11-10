@@ -79,7 +79,7 @@ def compare(res_csv, truth_csv):
     n = len(rows)
     if n == 0:
         print("没有可比对的行")
-        return
+        return None
     ok_f = sum(r["final"] == r["true"] for r in rows)
     ok_s = sum(r["species"] == r["true"] for r in rows)
     ok_g = sum(r["genus"] == r["true_g"] for r in rows)
@@ -118,33 +118,63 @@ def compare(res_csv, truth_csv):
         if len(errs) > 25:
             print(f"  ... 其余 {len(errs)-25} 个")
 
+    return {"n": n, "flat": ok_s / n * 100, "genus": ok_g / n * 100,
+            "hier": ok_f / n * 100}
+
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--fold", type=int, default=0)
+    ap.add_argument("--folds", default="",
+                    help="多折一起跑,如 0,1,2,3,4;给出时会覆盖 --fold 并输出均值")
     ap.add_argument("--splits", default="../splits/splits_v2.json")
     ap.add_argument("--dataset", default=os.environ.get("FF2_DATASET_DIR", ""))
     ap.add_argument("--weights", default="weights")
     ap.add_argument("--workdir", default="/tmp/ff2_bench")
+    ap.add_argument("--ckpt-fold", type=int, default=-1,
+                    help="用第几折的权重;默认与 --fold 相同(正确的交叉验证口径)")
     ap.add_argument("--reuse", action="store_true")
     args = ap.parse_args()
 
     if not args.dataset:
         raise SystemExit("需要 export FF2_DATASET_DIR 或传 --dataset")
+    folds = ([int(x) for x in args.folds.split(",") if x.strip()]
+             if args.folds.strip() else [args.fold])
     os.makedirs(args.workdir, exist_ok=True)
-    csvp = os.path.join(args.workdir, f"fold{args.fold}.csv")
-    outp = os.path.join(args.workdir, f"fold{args.fold}_res")
 
-    if not args.reuse:
-        build_csv(args.splits, args.fold, args.dataset, csvp)
-        cmd = [sys.executable, "infer.py", "--input", csvp,
-               "--output", outp, "--weights", args.weights]
-        print("\n运行:", " ".join(cmd), "\n")
-        r = subprocess.run(cmd)
-        if r.returncode != 0:
-            raise SystemExit("infer.py 失败")
+    res = []
+    for fold in folds:
+        ck = fold if args.ckpt_fold < 0 else args.ckpt_fold
+        csvp = os.path.join(args.workdir, f"fold{fold}.csv")
+        outp = os.path.join(args.workdir, f"fold{fold}_res")
+        print(f"\n{'#'*62}\n# fold {fold}   (权重 fold{ck})\n{'#'*62}")
+        if not args.reuse:
+            build_csv(args.splits, fold, args.dataset, csvp)
+            cmd = [sys.executable, "infer.py", "--input", csvp,
+                   "--output", outp, "--weights", args.weights,
+                   "--ckpt-fold", str(ck)]
+            print("\n运行:", " ".join(cmd), "\n")
+            r = subprocess.run(cmd)
+            if r.returncode != 0:
+                raise SystemExit("infer.py 失败")
+        st = compare(outp + ".csv", csvp.replace(".csv", "_truth.csv"))
+        if st:
+            st["fold"] = fold
+            res.append(st)
 
-    compare(outp + ".csv", csvp.replace(".csv", "_truth.csv"))
+    if len(res) > 1:
+        print(f"\n{'='*62}")
+        print(f"{'fold':>5} {'n':>5} {'扁平':>8} {'属':>8} {'层级':>8}")
+        for s in res:
+            print(f"{s['fold']:>5} {s['n']:>5} {s['flat']:>7.2f}% "
+                  f"{s['genus']:>7.2f}% {s['hier']:>7.2f}%")
+        n = sum(s["n"] for s in res)
+        print(f"{'-'*62}")
+        print(f"{'合计':>5} {n:>5} "
+              f"{sum(s['flat']*s['n'] for s in res)/n:>7.2f}% "
+              f"{sum(s['genus']*s['n'] for s in res)/n:>7.2f}% "
+              f"{sum(s['hier']*s['n'] for s in res)/n:>7.2f}%")
+        print(f"{'='*62}")
 
 
 if __name__ == "__main__":

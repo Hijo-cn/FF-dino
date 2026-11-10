@@ -62,7 +62,7 @@ class ImgDS(Dataset):
 
 
 def load_model(ckpt, n_classes, size, device):
-    base, _, _, size = build_backbone(C.BACKBONE, n_classes, size)
+    base, _, _, size = build_backbone(C.BACKBONE, n_classes, size, pretrained=False)
     m = DualHeadNet(base, n_classes, pool="gem")
     sd = torch.load(ckpt, map_location="cpu")
     m.load_state_dict(sd)
@@ -106,6 +106,8 @@ def main():
     ap.add_argument("--input", required=True, help="CSV: image_path,specimen[,view]")
     ap.add_argument("--output", default="results", help="输出前缀(不带扩展名)")
     ap.add_argument("--weights", default=C.WEIGHTS_DIR)
+    ap.add_argument("--ckpt-fold", type=int, default=0,
+                    help="用第几折训练的权重(默认 0;仅做交叉验证时需要改)")
     ap.add_argument("--limit", type=int, default=0, help="只处理前 N 个标本(调试)")
     ap.add_argument("--per-view-emb", action="store_true", help="额外保存逐视角 embedding")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -157,6 +159,15 @@ def main():
         if v in by_view:
             print(f"  {v:9s} {len(by_view[v])} 张")
 
+    bad = [r for r in ok if r["view"] not in C.VIEWS]
+    if bad:
+        print(f"\n[!] 有 {len(bad)} 张图的 view 无法识别,已跳过:")
+        print(f"    示例: {os.path.basename(bad[0]['path'])}")
+        print(f"    合法取值: {C.VIEWS}")
+        print(f"    请在 CSV 的 view 列里填上视角(留空时只能从文件名 #s#v 等推断)。")
+        if not by_view:
+            raise SystemExit("没有任何图片能确定视角,无法推理。")
+
     spec_pos = {s: i for i, s in enumerate(specs)}
     n = len(specs)
     SP = {v: np.zeros((n, len(names)), dtype=np.float32) for v in by_view}
@@ -178,29 +189,24 @@ def main():
         dl = DataLoader(ds, batch_size=C.BATCH_SIZE, shuffle=False,
                         num_workers=C.NUM_WORKERS, pin_memory=True)
 
-        got = False
-        for fold in C.FOLDS:
-            ck = os.path.join(args.weights, f"{C.TAG_SPECIES}_{v}_fold{fold}.pth")
-            if not os.path.exists(ck):
-                print(f"  缺种模型 {ck}")
-                continue
-            model, _, n_emb = load_model(ck, len(names), C.IMG_SIZE, device)
-            P, E = predict_all(model, dl, device, len(names), n_emb)
-            del model
-            if device.type == "cuda":
-                torch.cuda.empty_cache()
-            for j, si in enumerate(idx):
-                SP[v][si] += P[j]
-                EM[v][si] += E[j]
-                CNT[v][si] += 1
-            got = True
-            print(f"  种模型 fold{fold} 完成  ({time.time()-t0:.0f}s)", flush=True)
-
-        if not got:
+        ck = os.path.join(args.weights,
+                          f"{C.TAG_SPECIES}_{v}_fold{args.ckpt_fold}.pth")
+        if not os.path.exists(ck):
+            print(f"  缺种模型 {ck}")
             continue
-
+        model, _, n_emb = load_model(ck, len(names), C.IMG_SIZE, device)
+        P, E = predict_all(model, dl, device, len(names), n_emb)
+        del model
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+        for j, si in enumerate(idx):
+            SP[v][si] += P[j]
+            EM[v][si] += E[j]
+            CNT[v][si] += 1
+        print(f"  种模型完成  ({time.time()-t0:.0f}s)", flush=True)
         if C.USE_HIERARCHICAL:
-            ck = os.path.join(args.weights, f"{C.TAG_GENUS}_{v}_fold0.pth")
+            ck = os.path.join(args.weights,
+                              f"{C.TAG_GENUS}_{v}_fold{args.ckpt_fold}.pth")
             if os.path.exists(ck):
                 model, _, _ = load_model(ck, len(genera), C.IMG_SIZE, device)
                 G, _ = predict_all(model, dl, device, len(genera), 2048)

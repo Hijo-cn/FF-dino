@@ -14,17 +14,21 @@ BACKBONES = {
 }
 
 
-def build_backbone(backbone="dinov3l", n_classes=51, img_size=592):
-    """返回 (model, mean, std)"""
+def build_backbone(backbone="dinov3l", n_classes=51, img_size=592, pretrained=False):
+    """返回 (model, mean, std, size)
+
+    pretrained=False 时不会联网下载骨干 —— 从 .pth 加载完整权重时应该用 False,
+    否则每次运行都会去 HuggingFace 拉 1.2GB。
+    """
     import timm
     timm_id, default_size = BACKBONES[backbone]
     size = img_size or default_size
     try:
-        model = timm.create_model(timm_id, pretrained=True, num_classes=n_classes,
+        model = timm.create_model(timm_id, pretrained=pretrained, num_classes=n_classes,
                                   dynamic_img_size=True)
     except TypeError:
-        model = timm.create_model(timm_id, pretrained=True, num_classes=n_classes)
-    cfg = timm.data.resolve_data_config({}, model=model)
+        model = timm.create_model(timm_id, pretrained=pretrained, num_classes=n_classes)
+    cfg = timm.data.resolve_data_config({}, model=model, pretrained=pretrained)
     return model, cfg["mean"], cfg["std"], size
 
 
