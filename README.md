@@ -24,8 +24,7 @@ image_path,specimen,view
 
 - `image_path`:图片路径
 - `specimen`:标本编号,同一编号的多张图会合并成一个标本
-- `view`:`ventral` / `dorsal` / `lateral` / `mand`。
-  留空则从文件名推断(含 `#s#v`→ventral,`#s#d`→dorsal,`#s#l`→lateral,`#m#l`→mand)
+- `view`:**必填**,只能是 `ventral` / `dorsal` / `lateral` / `mand`
 
 ## 运行
 
