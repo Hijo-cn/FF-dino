@@ -13,6 +13,10 @@ BACKBONES = {
     "dinov2l": ("vit_large_patch14_dinov2.lvd142m", 518),
 }
 
+# DINOv3/DINOv2 使用的都是 ImageNet 归一化
+IMAGENET_MEAN = (0.485, 0.456, 0.406)
+IMAGENET_STD = (0.229, 0.224, 0.225)
+
 
 def build_backbone(backbone="dinov3l", n_classes=51, img_size=592, pretrained=False):
     """返回 (model, mean, std, size)
@@ -23,13 +27,9 @@ def build_backbone(backbone="dinov3l", n_classes=51, img_size=592, pretrained=Fa
     import timm
     timm_id, default_size = BACKBONES[backbone]
     size = img_size or default_size
-    try:
-        model = timm.create_model(timm_id, pretrained=pretrained, num_classes=n_classes,
-                                  dynamic_img_size=True)
-    except TypeError:
-        model = timm.create_model(timm_id, pretrained=pretrained, num_classes=n_classes)
-    cfg = timm.data.resolve_data_config({}, model=model, pretrained=pretrained)
-    return model, cfg["mean"], cfg["std"], size
+    model = timm.create_model(timm_id, pretrained=pretrained,
+                              num_classes=n_classes, dynamic_img_size=True)
+    return model, IMAGENET_MEAN, IMAGENET_STD, size
 
 
 class DualHeadNet(nn.Module):
